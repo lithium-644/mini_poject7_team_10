@@ -7,7 +7,7 @@ import numpy as np
 import cv2
 import string
 from keras.models import load_model
-
+from django.db import connection
 
 # from pybo.model import Result
 from .models import Result, AI_Model
@@ -20,7 +20,13 @@ def index(request):
     return render(request, 'language/index.html')
 
 def upload(request):
+        #db 조회하여 모델 선택
+    cursor = connection.cursor()
+    cursor.execute("select address from account_profile where id=1")
+    print(cursor.fetchall())
+    results = []
     if request.method == 'POST' and request.FILES['files']:
+        
 
         #todo form에서 전송한 파일을 획득한다.
         file = request.FILES['files']
@@ -41,7 +47,7 @@ def upload(request):
         #todo history 저장을 위해 객체에 담아서 DB에 저장한다.
         # 이때 파일시스템에 저장도 된다.
         result = Result()
-        result.answer = request.POST.get('answer', '')  # answer를 채워봅시다.
+        result.answer = request.POST.get('answer', '')[idx] # answer를 채워봅시다.
         result.image = file # image를 채워봅시다.
         result.pub_date = timezone.datetime.now()
         result.save()
@@ -64,21 +70,26 @@ def upload(request):
         #todo 예측 : 결국 이 결과를 얻기 위해 모든 것을 했다.
         # 예측 결과를 수행해보세요.
         pred = model.predict(test_sign)
-        
+        pred_1 = pred.argmax(axis=1)
         #todo 예측 결과를 DB에 저장한다.
         result.result = class_names[pred.argmax(axis=1)]    #예측결과
         result.save()
-
-        context = {
-            'result': result,
-        }
+        if result.answer==result.result:
+            result.test = '정답'
+            result.save()
+        else:
+            result.test = '오답'
+            result.save()
+        results.append(result)
 
 
     # http method의 GET은 처리하지 않는다. 사이트 테스트용으로 남겨둠.
     else:
         test = request.GET['test']
         logger.error(('Something went wrong!!',test))
-
+    context = {
+                'result': results,
+            }
     return render(request, 'language/result.html', context)    
 
 def modelFiles(request):
