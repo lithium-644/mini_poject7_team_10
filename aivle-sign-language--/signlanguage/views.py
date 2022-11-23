@@ -47,7 +47,7 @@ def upload(request):
         #todo history 저장을 위해 객체에 담아서 DB에 저장한다.
         # 이때 파일시스템에 저장도 된다.
         result = Result()
-        result.answer = request.POST.get('answer', '')[idx] # answer를 채워봅시다.
+        result.answer = request.POST.getlist('answer', '')[idx] # answer를 채워봅시다.
         result.image = file # image를 채워봅시다.
         result.pub_date = timezone.datetime.now()
         result.save()
@@ -70,7 +70,6 @@ def upload(request):
         #todo 예측 : 결국 이 결과를 얻기 위해 모든 것을 했다.
         # 예측 결과를 수행해보세요.
         pred = model.predict(test_sign)
-        pred_1 = pred.argmax(axis=1)
         #todo 예측 결과를 DB에 저장한다.
         result.result = class_names[pred.argmax(axis=1)]    #예측결과
         result.save()
